@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE package-info SYSTEM "http://www.hippoedit.com/xml/package-info">
+<package-info xmlns="http://www.hippoedit.com/xml/package-info" xmlns:smf="http://www.hippoedit.com/">
+	<id>73B0CCED-C376-44C8-83D4-A5F4030EEC29</id>
+	<name>Numbering Tools</name>
+	<version>1.1</version>
+	<description>Numbering Tools allows you to insert sequential numbers or characters at the cursor position or vertical selection.</description>
+	<author>HippoEDIT.com</author>
+	<email>supportbox@hippoedit.com</email>
+	<homepage>http://wiki.hippoedit.com/plugins/numbering-tools</homepage>
+	<memo></memo>
+	<install>
+		<readme type="inline">This will install Numbering Tools plugin for HippoEDIT.</readme>
+		<require-file name="main.hejs" destination="%{plugins}%/numbering/main.hejs" />
+		<install-plugin path="%{plugins}%/numbering/main.hejs"/>
+	</install>
+	<uninstall>
+		<readme type="inline">This will uninstall Numbering Tools plugin for HippoEDIT.</readme>
+		<uninstall-plugin id="73B0CCED-C376-44C8-83D4-A5F4030EEC29"/>
+		<remove-file name="%{plugins}%/numbering/main.hejs" />
+	</uninstall>
+</package-info>

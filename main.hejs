@@ -1,0 +1,136 @@
+Application.AddScriptInfo("73B0CCED-C376-44C8-83D4-A5F4030EEC29", "Numbering Tools", "1.1", "Numbering tools allows you to insert sequential numbers or characters at the cursor position or vertical selection.", "HippoEDIT.com", "supportbox@hippoedit.com", "http://wiki.hippoedit.com/plugins/numbering-tools");
+
+//${ region Icons }
+var nIcon = Application.RegisterImageString(
+'R0lGODlhEAAQALMAAAAAAN3d3W9vbzMzM6Ojo/f39+/v75mZmVxcXL6+vufn57W1tf///0ZGRg0NDXt7\
+ eyH5BAEHAAwALAAAAAAQABAAAARaMAgHqr3ghJOK/6C3HEARBEqqKkZrVCagyoDbwoqc0vZb5sCa0IVb\
+ 9Yg/1fFTFLweLwQI96gRBrdpstYgtBAlD+zmK1Sk4pItNH0kXOxPQkPC2DWMvH7PZ0QAADs=');
+//${ endregion }
+
+function mul(str, num) {
+	return num ? Array(num + 1).join(str) : "";
+}
+
+function isNumber (o) {
+  return ! isNaN (o-0) && o !== null && o !== "" && o !== false;
+}
+
+function OnHelp()
+{
+	OpenURL("http://wiki.hippoedit.com/plugins/numbering-tools");
+}
+
+var vCommand = new Command("NumberingTools.ReNumber", "ReNumber Selection...", "ReNumber selected text or text from cursor position and below", nIcon);
+vCommand.onExecute = function() {
+
+	var doc = ActiveDocument;
+	var sel = doc.ActiveView.Selection;
+	var options = { first: String(sel.Top), increment: 1, count: sel.Height?sel.Height:doc.LineCount - sel.Bottom - 1, format: 1 };
+
+	var style = sel.Height?"number|readonly":"number";
+	var dialog_template = 
+	'@<dialog title="Insert Numbering" id="numbering"> \
+		<group> \
+		 <paragraph text="&amp;First Line:" minwidth="10" style="required" align="left"/> \
+		 <edit id="first" minwidth="10" required="true" align="right"/> \
+		</group> \
+		<group> \
+		 <paragraph text="&amp;Increment:" style="required" align="left"/> \
+		 <edit id="increment" style="number" minwidth="10" required="true" align="right"/> \
+		</group> \
+		<group> \
+		 <paragraph text="&amp;Number of lines:" align="left"/> \
+		 <edit id="count" style="'+ style +'" minwidth="10" align="right"/> \
+		</group> \
+		<columnbreak/> \
+		<hspacer spacing="20"/> \
+		<columnbreak/> \
+		<radio_button_group selected_index="1" id="format"> \
+			 <item text="He&amp;xadecimal"/> \
+			 <item text="&amp;Decimal"/> \
+			 <item text="Oc&amp;tal"/> \
+			 <item text="&amp;Binary"/> \
+			 <item text="Ch&amp;aracter"/> \
+		</radio_button_group> \
+		<sectionbreak/> \
+		<spacer/> \
+		<group uniform="true" align="bottom"> \
+			<button title="&amp;Help" onclick="OnHelp" align="left"/> \
+			<button title="&amp;OK" returnval="ok" default="true" align="right"/> \
+			<button title="&amp;Cancel" returnval="cancel" align="right"/> \
+		</group> \
+	</dialog>@'; 
+
+	var result = dialog(dialog_template, options);
+	if ( result == "ok" ) {
+		var lines = [];
+				
+		if ( options.format == 4 ) { // character
+			if ( isNumber(options.first) )
+				options.first = 65 + Number(options.first);
+			else
+				options.first = options.first.charCodeAt(0);
+		} else if ( isNumber(options.first) ) {
+			options.first = Number(options.first);
+		}
+
+		for (var i = 0; i <= options.count; i++)
+		{
+			var nNumber = options.first + i*options.increment;
+			switch (options.format) {
+			case 0: // hexadecimal
+				var hex = nNumber.toString(16).toUpperCase();
+				var nLeadingZero = Number(options.first + options.count*options.increment).toString(16).length;
+				nLeadingZero += nLeadingZero%2; 
+				lines.push("0x" + mul("0", nLeadingZero - hex.length) + hex);
+				break;
+			case 1: // decimal
+				lines.push(nNumber.toString());
+				break;
+			case 2: // octal
+				lines.push(nNumber.toString(8).toUpperCase());
+				break;
+			case 3: // binary
+				lines.push(nNumber.toString(2));
+				break;
+			case 4: // character
+				lines.push(String.fromCharCode(nNumber));
+				break;
+			}			
+		}
+		
+		if ( sel.IsEmpty ) {
+			sel.End = doc.InsertTextBlock(sel.start, lines.join("\r\n"), AddUndoActionType(this.Title))
+			sel.Block = true;
+		} 			
+		else {
+			sel.End = doc.ReplaceText(sel, lines.join("\r\n"), AddUndoActionType(this.Title));			
+		} 
+		doc.ActiveView.Selection = sel;
+	}
+}
+vCommand.onEnabled = function() {
+	return ActiveDocument !== null && ActiveDocument.ReadOnly !== true;
+};
+
+Application.RegisterCommand(vCommand);
+
+////////////////////////////////////////////////////////////////////////
+// Initialize Toolbar
+Application.onInitToolbars = function() {
+	var MyToolbar = this.GetToolBar("NumberingTools", true);
+	MyToolbar.Name = "NumberingTools";
+	MyToolbar.AddButton(vCommand);
+}
+
+////////////////////////////////////////////////////////////////////////
+// Update main menu with our items
+Application.onInitMainMenu = function(bUpdate) {
+	if (bUpdate === false) {
+		var menu_location = this.GetMenuItemPos("Edit.DeleteDuplicates");
+		if (menu_location.Menu !== null && menu_location.Position != -1) {
+			menu_location.Menu.InsertItem(menu_location.Position + 1, "", vCommand);
+			menu_location.Menu.InsertItem(menu_location.Position + 1);
+		}
+	}
+};
